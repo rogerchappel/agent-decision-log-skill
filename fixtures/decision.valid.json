@@ -1,0 +1,35 @@
+{
+  "id": "decision-001",
+  "title": "Choose release candidate branch",
+  "context": "Need a branch that keeps main stable while reviewers inspect the build.",
+  "options": [
+    {
+      "name": "push to main",
+      "tradeoffs": ["fast", "less reviewable"]
+    },
+    {
+      "name": "release candidate branch",
+      "tradeoffs": ["reviewable", "slower"]
+    }
+  ],
+  "chosen": "release candidate branch",
+  "rationale": "Keeps a review boundary and supports verification notes.",
+  "evidence": [
+    {
+      "label": "test output",
+      "ref": "npm test"
+    }
+  ],
+  "risks": [
+    {
+      "level": "medium",
+      "description": "PR may drift if main changes."
+    }
+  ],
+  "followups": [
+    {
+      "owner": "maintainer",
+      "task": "Review release candidate PR."
+    }
+  ]
+}

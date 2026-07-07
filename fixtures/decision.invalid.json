@@ -1,0 +1,14 @@
+{
+  "id": "decision-002",
+  "title": "Send production update",
+  "context": "Need to notify a customer.",
+  "options": [
+    {
+      "name": "send now",
+      "tradeoffs": []
+    }
+  ],
+  "chosen": "send later",
+  "rationale": "token=secret-value should be flagged",
+  "evidence": []
+}
