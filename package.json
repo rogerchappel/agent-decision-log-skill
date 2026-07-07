@@ -1,0 +1,34 @@
+{
+  "name": "agent-decision-log-skill",
+  "version": "0.1.0",
+  "description": "Local-first agent skill for validating and rendering auditable agent decision logs.",
+  "type": "module",
+  "bin": {
+    "agent-decision-log": "./bin/agent-decision-log.js"
+  },
+  "scripts": {
+    "test": "node --test",
+    "check": "node --check bin/agent-decision-log.js && node --check src/index.js",
+    "smoke": "node bin/agent-decision-log.js render fixtures/decision.valid.json --format markdown"
+  },
+  "keywords": [
+    "agent",
+    "skill",
+    "audit",
+    "decision-log",
+    "handoff"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  },
+  "files": [
+    "bin",
+    "src",
+    "docs",
+    "fixtures",
+    "SKILL.md",
+    "README.md",
+    "LICENSE"
+  ]
+}
