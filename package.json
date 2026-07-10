@@ -9,7 +9,7 @@
   "scripts": {
     "test": "node --test",
     "check": "node --check bin/agent-decision-log.js && node --check src/index.js",
-    "smoke": "node bin/agent-decision-log.js render fixtures/decision.valid.json --format markdown",
+    "smoke": "node bin/agent-decision-log.js --help >/dev/null && node bin/agent-decision-log.js render fixtures/decision.valid.json --format markdown",
     "package:smoke": "node scripts/package-smoke.mjs",
     "release:check": "npm run check && npm test && npm run smoke && npm run package:smoke"
   },
