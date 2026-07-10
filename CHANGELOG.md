@@ -1,0 +1,6 @@
+# Changelog
+
+## 0.1.0
+
+- Initial release candidate for validating and rendering local agent decision logs.
+- Includes JSON fixture validation, Markdown and JSON rendering, CLI smoke coverage, and npm package smoke verification.
