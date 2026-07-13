@@ -42,6 +42,18 @@ node bin/agent-decision-log.js render fixtures/decision.valid.json --format mark
 - `agent-decision-log render <file> --format markdown` emits a human-readable decision record.
 - `agent-decision-log render <file> --format json` emits normalized JSON with warnings.
 
+## Verification
+
+Run the same checks used for release-readiness before publishing or opening a release PR:
+
+```bash
+npm run check
+npm test
+npm run smoke
+npm run release:check
+npm pack --dry-run
+```
+
 ## Safety Notes
 
 The tool is local-first and never writes to external services. It does not prove that a decision was correct; it only checks whether the decision record is complete enough to review. Secret-looking values are flagged so the agent can redact before sharing.
