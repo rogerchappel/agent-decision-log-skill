@@ -24,6 +24,14 @@ export function validateDecisionLog(log) {
   const errors = [];
   const warnings = [];
 
+  if (!log || typeof log !== "object" || Array.isArray(log)) {
+    return {
+      ok: false,
+      errors: ["Decision log root must be a JSON object."],
+      warnings
+    };
+  }
+
   for (const field of REQUIRED_STRING_FIELDS) {
     if (!isNonEmptyString(log[field])) {
       errors.push(`Missing required string field: ${field}`);
@@ -179,4 +187,3 @@ function findSecretLikeValues(value, path = "$") {
 function isNonEmptyString(value) {
   return typeof value === "string" && value.trim().length > 0;
 }
-

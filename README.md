@@ -39,7 +39,8 @@ node bin/agent-decision-log.js render fixtures/decision.valid.json --format mark
 ## Commands
 
 - `agent-decision-log validate <file>` checks required fields and reports issues.
-- `agent-decision-log render <file> --format markdown` emits a human-readable decision record.
+- `agent-decision-log render <file>` emits a human-readable Markdown decision record by default.
+- `agent-decision-log render <file> --format markdown` selects Markdown explicitly.
 - `agent-decision-log render <file> --format json` emits normalized JSON with warnings.
 
 ## Verification
@@ -63,4 +64,3 @@ The tool is local-first and never writes to external services. It does not prove
 - JSON input only in V1.
 - Evidence refs are treated as text, not fetched or verified.
 - Risk scoring is heuristic and intentionally conservative.
-
