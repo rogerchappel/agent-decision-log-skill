@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import { execFileSync, spawnSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import test from "node:test";
 import { renderMarkdown, validateDecisionLog } from "../src/index.js";
 
@@ -35,6 +37,25 @@ test("non-object JSON roots return an explicit schema error", () => {
     assert.equal(result.ok, false);
     assert.deepEqual(result.errors, ["Decision log root must be a JSON object."]);
     assert.deepEqual(result.warnings, []);
+  }
+});
+
+test("malformed nested collection entries return positioned shape errors", () => {
+  const cases = [
+    ["options", /Option 1 must be an object with name and tradeoffs fields/],
+    ["evidence", /Evidence 1 must be an object with label and ref fields/],
+    ["risks", /Risk 1 must be an object with level and description fields/],
+    ["followups", /Follow-up 1 must be an object with owner and task fields/]
+  ];
+
+  for (const [collection, expected] of cases) {
+    for (const entry of [null, "invalid", 42, true, []]) {
+      const log = structuredClone(valid);
+      log[collection] = collection === "options" ? [entry, valid.options[1]] : [entry];
+      const result = validateDecisionLog(log);
+      assert.equal(result.ok, false, `${collection} should reject ${JSON.stringify(entry)}`);
+      assert.match(result.errors.join("\n"), expected);
+    }
   }
 });
 
@@ -84,4 +105,31 @@ test("CLI render defaults to Markdown only when format is absent", () => {
   const result = runCli(["render", "fixtures/decision.valid.json"]);
   assert.equal(result.status, 0);
   assert.match(result.stdout, /^# Decision Log:/);
+});
+
+test("CLI validate and render report malformed entries without leaking TypeErrors", () => {
+  const directory = mkdtempSync(join(tmpdir(), "decision-log-test-"));
+  try {
+    const cases = [
+      ["options", /Option 1 must be an object with name and tradeoffs fields/],
+      ["evidence", /Evidence 1 must be an object with label and ref fields/],
+      ["risks", /Risk 1 must be an object with level and description fields/],
+      ["followups", /Follow-up 1 must be an object with owner and task fields/]
+    ];
+    for (const [collection, expected] of cases) {
+      const log = structuredClone(valid);
+      log[collection] = collection === "options" ? [null, valid.options[1]] : [null];
+      const file = join(directory, `${collection}.json`);
+      writeFileSync(file, JSON.stringify(log));
+
+      for (const args of [["validate", file], ["render", file], ["render", file, "--format", "json"]]) {
+        const result = runCli(args);
+        assert.equal(result.status, 1);
+        assert.match(result.stdout, expected);
+        assert.doesNotMatch(result.stderr, /TypeError/);
+      }
+    }
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
 });
