@@ -43,6 +43,10 @@ export function validateDecisionLog(log) {
   } else {
     const optionNames = new Set();
     for (const [index, option] of log.options.entries()) {
+      if (!isObjectEntry(option)) {
+        errors.push(`Option ${index + 1} must be an object with name and tradeoffs fields.`);
+        continue;
+      }
       if (!isNonEmptyString(option.name)) {
         errors.push(`Option ${index + 1} is missing a name.`);
       } else {
@@ -61,6 +65,10 @@ export function validateDecisionLog(log) {
     errors.push("At least one evidence entry is required.");
   } else {
     for (const [index, item] of log.evidence.entries()) {
+      if (!isObjectEntry(item)) {
+        errors.push(`Evidence ${index + 1} must be an object with label and ref fields.`);
+        continue;
+      }
       if (!isNonEmptyString(item.label) || !isNonEmptyString(item.ref)) {
         errors.push(`Evidence ${index + 1} requires label and ref.`);
       }
@@ -69,6 +77,10 @@ export function validateDecisionLog(log) {
 
   if (Array.isArray(log.risks)) {
     for (const [index, risk] of log.risks.entries()) {
+      if (!isObjectEntry(risk)) {
+        errors.push(`Risk ${index + 1} must be an object with level and description fields.`);
+        continue;
+      }
       if (!["low", "medium", "high"].includes(risk.level)) {
         warnings.push(`Risk ${index + 1} should use level low, medium, or high.`);
       }
@@ -80,6 +92,10 @@ export function validateDecisionLog(log) {
 
   if (Array.isArray(log.followups)) {
     for (const [index, followup] of log.followups.entries()) {
+      if (!isObjectEntry(followup)) {
+        errors.push(`Follow-up ${index + 1} must be an object with owner and task fields.`);
+        continue;
+      }
       if (!isNonEmptyString(followup.owner) || !isNonEmptyString(followup.task)) {
         warnings.push(`Follow-up ${index + 1} should include owner and task.`);
       }
@@ -114,6 +130,10 @@ export function renderMarkdown(log, validation = validateDecisionLog(log)) {
   ];
 
   for (const option of log.options || []) {
+    if (!isObjectEntry(option)) {
+      lines.push("- Invalid option entry");
+      continue;
+    }
     lines.push(`- ${option.name || "Unnamed option"}`);
     for (const tradeoff of option.tradeoffs || []) {
       lines.push(`  - ${tradeoff}`);
@@ -122,11 +142,19 @@ export function renderMarkdown(log, validation = validateDecisionLog(log)) {
 
   lines.push("", "## Rationale", "", log.rationale || "Missing rationale.", "", "## Evidence", "");
   for (const item of log.evidence || []) {
+    if (!isObjectEntry(item)) {
+      lines.push("- Invalid evidence entry");
+      continue;
+    }
     lines.push(`- ${item.label || "Evidence"}: ${item.ref || "missing ref"}`);
   }
 
   lines.push("", "## Risks", "");
   for (const risk of log.risks || []) {
+    if (!isObjectEntry(risk)) {
+      lines.push("- Invalid risk entry");
+      continue;
+    }
     lines.push(`- ${risk.level || "unknown"}: ${risk.description || "missing description"}`);
   }
   if (!Array.isArray(log.risks) || log.risks.length === 0) {
@@ -135,6 +163,10 @@ export function renderMarkdown(log, validation = validateDecisionLog(log)) {
 
   lines.push("", "## Follow-ups", "");
   for (const followup of log.followups || []) {
+    if (!isObjectEntry(followup)) {
+      lines.push("- Invalid follow-up entry");
+      continue;
+    }
     lines.push(`- ${followup.owner || "unowned"}: ${followup.task || "missing task"}`);
   }
   if (!Array.isArray(log.followups) || log.followups.length === 0) {
@@ -186,4 +218,8 @@ function findSecretLikeValues(value, path = "$") {
 
 function isNonEmptyString(value) {
   return typeof value === "string" && value.trim().length > 0;
+}
+
+function isObjectEntry(value) {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
 }
