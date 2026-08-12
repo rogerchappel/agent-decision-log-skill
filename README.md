@@ -36,6 +36,8 @@ node bin/agent-decision-log.js render fixtures/decision.valid.json --format mark
 }
 ```
 
+Each entry in `options`, `evidence`, `risks`, and `followups` must be a JSON object (not `null`, a primitive, or an array). Option objects use `name` and `tradeoffs`; evidence objects use `label` and `ref`; risk objects use `level` and `description`; and follow-up objects use `owner` and `task`. Malformed entries are reported as validation errors with their one-based collection position.
+
 ## Commands
 
 - `agent-decision-log validate <file>` checks required fields and reports issues.
