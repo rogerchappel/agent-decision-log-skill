@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { normalizeDecisionLog, readDecisionLog, renderMarkdown, validateDecisionLog } from "../src/index.js";
+import { readDecisionLog, renderMarkdown, validateDecisionLog } from "../src/index.js";
 
 const [command, filePath, ...args] = process.argv.slice(2);
 
@@ -18,13 +18,14 @@ try {
   }
   if (command === "render") {
     const format = parseRenderFormat(args);
+    const validation = validateDecisionLog(log);
     if (format === "markdown") {
-      process.stdout.write(renderMarkdown(log));
-      process.exit(0);
+      process.stdout.write(renderMarkdown(log, validation));
+      process.exit(validation.ok ? 0 : 1);
     }
     if (format === "json") {
-      process.stdout.write(`${JSON.stringify(normalizeDecisionLog(log), null, 2)}\n`);
-      process.exit(0);
+      process.stdout.write(`${JSON.stringify({ decision: log, validation }, null, 2)}\n`);
+      process.exit(validation.ok ? 0 : 1);
     }
     throw new Error(`Unsupported format: ${format}`);
   }
