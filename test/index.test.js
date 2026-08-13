@@ -66,6 +66,33 @@ test("markdown render includes decision sections", () => {
   assert.match(rendered, /npm test/);
 });
 
+test("markdown render reports invalid roots without throwing", () => {
+  for (const root of [null, [], "decision", 42, true]) {
+    const rendered = renderMarkdown(root);
+    assert.match(rendered, /Validation: fail/);
+    assert.match(rendered, /error: Decision log root must be a JSON object\./);
+  }
+});
+
+test("non-array decision collections return stable shape errors", () => {
+  const expectedErrors = {
+    options: "At least two options are required.",
+    evidence: "At least one evidence entry is required.",
+    risks: "Risks must be an array when provided.",
+    followups: "Follow-ups must be an array when provided."
+  };
+
+  for (const [collection, expected] of Object.entries(expectedErrors)) {
+    for (const value of [null, {}, "invalid", 42, true]) {
+      const log = structuredClone(valid);
+      log[collection] = value;
+      const result = validateDecisionLog(log);
+      assert.equal(result.ok, false);
+      assert.ok(result.errors.includes(expected), `${collection} should reject ${JSON.stringify(value)}`);
+    }
+  }
+});
+
 test("CLI validate exits successfully for valid fixture", () => {
   const output = execFileSync("node", ["bin/agent-decision-log.js", "validate", "fixtures/decision.valid.json"], {
     cwd: new URL("..", import.meta.url),
@@ -127,6 +154,33 @@ test("CLI validate and render report malformed entries without leaking TypeError
         assert.equal(result.status, 1);
         assert.match(result.stdout, expected);
         assert.doesNotMatch(result.stderr, /TypeError/);
+      }
+    }
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
+});
+
+test("CLI render reports invalid roots and collection shapes without leaking TypeErrors", () => {
+  const directory = mkdtempSync(join(tmpdir(), "decision-log-render-test-"));
+  try {
+    const cases = [
+      ["null-root", null, /Decision log root must be a JSON object/],
+      ["array-root", [], /Decision log root must be a JSON object/],
+      ["options-object", { ...valid, options: {} }, /At least two options are required/],
+      ["evidence-object", { ...valid, evidence: {} }, /At least one evidence entry is required/],
+      ["risks-object", { ...valid, risks: {} }, /Risks must be an array when provided/],
+      ["followups-object", { ...valid, followups: {} }, /Follow-ups must be an array when provided/]
+    ];
+
+    for (const [name, log, expected] of cases) {
+      const file = join(directory, `${name}.json`);
+      writeFileSync(file, JSON.stringify(log));
+      for (const formatArgs of [[], ["--format", "markdown"], ["--format", "json"]]) {
+        const result = runCli(["render", file, ...formatArgs]);
+        assert.equal(result.status, 1);
+        assert.match(result.stdout, expected);
+        assert.doesNotMatch(`${result.stdout}\n${result.stderr}`, /TypeError|not iterable|Cannot read properties/);
       }
     }
   } finally {
