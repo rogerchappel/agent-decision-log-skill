@@ -75,7 +75,9 @@ export function validateDecisionLog(log) {
     }
   }
 
-  if (Array.isArray(log.risks)) {
+  if (log.risks !== undefined && !Array.isArray(log.risks)) {
+    errors.push("Risks must be an array when provided.");
+  } else if (Array.isArray(log.risks)) {
     for (const [index, risk] of log.risks.entries()) {
       if (!isObjectEntry(risk)) {
         errors.push(`Risk ${index + 1} must be an object with level and description fields.`);
@@ -90,7 +92,9 @@ export function validateDecisionLog(log) {
     }
   }
 
-  if (Array.isArray(log.followups)) {
+  if (log.followups !== undefined && !Array.isArray(log.followups)) {
+    errors.push("Follow-ups must be an array when provided.");
+  } else if (Array.isArray(log.followups)) {
     for (const [index, followup] of log.followups.entries()) {
       if (!isObjectEntry(followup)) {
         errors.push(`Follow-up ${index + 1} must be an object with owner and task fields.`);
@@ -114,34 +118,35 @@ export function validateDecisionLog(log) {
 }
 
 export function renderMarkdown(log, validation = validateDecisionLog(log)) {
+  const decision = isObjectEntry(log) ? log : {};
   const lines = [
-    `# Decision Log: ${log.title || "Untitled"}`,
+    `# Decision Log: ${decision.title || "Untitled"}`,
     "",
-    `- ID: ${log.id || "missing"}`,
-    `- Chosen: ${log.chosen || "missing"}`,
+    `- ID: ${decision.id || "missing"}`,
+    `- Chosen: ${decision.chosen || "missing"}`,
     `- Validation: ${validation.ok ? "pass" : "fail"}`,
     "",
     "## Context",
     "",
-    log.context || "Missing context.",
+    decision.context || "Missing context.",
     "",
     "## Options",
     ""
   ];
 
-  for (const option of log.options || []) {
+  for (const option of arrayOrEmpty(decision.options)) {
     if (!isObjectEntry(option)) {
       lines.push("- Invalid option entry");
       continue;
     }
     lines.push(`- ${option.name || "Unnamed option"}`);
-    for (const tradeoff of option.tradeoffs || []) {
+    for (const tradeoff of arrayOrEmpty(option.tradeoffs)) {
       lines.push(`  - ${tradeoff}`);
     }
   }
 
-  lines.push("", "## Rationale", "", log.rationale || "Missing rationale.", "", "## Evidence", "");
-  for (const item of log.evidence || []) {
+  lines.push("", "## Rationale", "", decision.rationale || "Missing rationale.", "", "## Evidence", "");
+  for (const item of arrayOrEmpty(decision.evidence)) {
     if (!isObjectEntry(item)) {
       lines.push("- Invalid evidence entry");
       continue;
@@ -150,26 +155,26 @@ export function renderMarkdown(log, validation = validateDecisionLog(log)) {
   }
 
   lines.push("", "## Risks", "");
-  for (const risk of log.risks || []) {
+  for (const risk of arrayOrEmpty(decision.risks)) {
     if (!isObjectEntry(risk)) {
       lines.push("- Invalid risk entry");
       continue;
     }
     lines.push(`- ${risk.level || "unknown"}: ${risk.description || "missing description"}`);
   }
-  if (!Array.isArray(log.risks) || log.risks.length === 0) {
+  if (!Array.isArray(decision.risks) || decision.risks.length === 0) {
     lines.push("- none recorded");
   }
 
   lines.push("", "## Follow-ups", "");
-  for (const followup of log.followups || []) {
+  for (const followup of arrayOrEmpty(decision.followups)) {
     if (!isObjectEntry(followup)) {
       lines.push("- Invalid follow-up entry");
       continue;
     }
     lines.push(`- ${followup.owner || "unowned"}: ${followup.task || "missing task"}`);
   }
-  if (!Array.isArray(log.followups) || log.followups.length === 0) {
+  if (!Array.isArray(decision.followups) || decision.followups.length === 0) {
     lines.push("- none recorded");
   }
 
@@ -222,4 +227,8 @@ function isNonEmptyString(value) {
 
 function isObjectEntry(value) {
   return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+
+function arrayOrEmpty(value) {
+  return Array.isArray(value) ? value : [];
 }
