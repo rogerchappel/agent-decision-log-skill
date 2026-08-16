@@ -41,7 +41,7 @@ export function validateDecisionLog(log) {
   if (!Array.isArray(log.options) || log.options.length < 2) {
     errors.push("At least two options are required.");
   } else {
-    const optionNames = new Set();
+    const optionNames = new Map();
     for (const [index, option] of log.options.entries()) {
       if (!isObjectEntry(option)) {
         errors.push(`Option ${index + 1} must be an object with name and tradeoffs fields.`);
@@ -50,13 +50,26 @@ export function validateDecisionLog(log) {
       if (!isNonEmptyString(option.name)) {
         errors.push(`Option ${index + 1} is missing a name.`);
       } else {
-        optionNames.add(option.name);
+        const normalizedName = normalizeOptionName(option.name);
+        if (optionNames.has(normalizedName)) {
+          errors.push(
+            `Option ${index + 1} has the same normalized name as option ${optionNames.get(normalizedName)}.`
+          );
+        } else {
+          optionNames.set(normalizedName, index + 1);
+        }
       }
       if (!Array.isArray(option.tradeoffs) || option.tradeoffs.length === 0) {
         warnings.push(`Option ${option.name || index + 1} has no tradeoffs.`);
+      } else {
+        for (const [tradeoffIndex, tradeoff] of option.tradeoffs.entries()) {
+          if (!isNonEmptyString(tradeoff)) {
+            errors.push(`Option ${index + 1} tradeoff ${tradeoffIndex + 1} must be a nonempty string.`);
+          }
+        }
       }
     }
-    if (isNonEmptyString(log.chosen) && !optionNames.has(log.chosen)) {
+    if (isNonEmptyString(log.chosen) && !optionNames.has(normalizeOptionName(log.chosen))) {
       errors.push(`Chosen option "${log.chosen}" does not match any option name.`);
     }
   }
@@ -141,7 +154,7 @@ export function renderMarkdown(log, validation = validateDecisionLog(log)) {
     }
     lines.push(`- ${option.name || "Unnamed option"}`);
     for (const tradeoff of arrayOrEmpty(option.tradeoffs)) {
-      lines.push(`  - ${tradeoff}`);
+      lines.push(`  - ${isNonEmptyString(tradeoff) ? tradeoff : "Invalid tradeoff entry"}`);
     }
   }
 
@@ -223,6 +236,10 @@ function findSecretLikeValues(value, path = "$") {
 
 function isNonEmptyString(value) {
   return typeof value === "string" && value.trim().length > 0;
+}
+
+function normalizeOptionName(value) {
+  return value.trim().normalize("NFC").toLocaleLowerCase("en-US");
 }
 
 function isObjectEntry(value) {

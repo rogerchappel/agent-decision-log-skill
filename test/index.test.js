@@ -59,6 +59,40 @@ test("malformed nested collection entries return positioned shape errors", () =>
   }
 });
 
+test("option tradeoffs must be nonempty strings with positioned errors", () => {
+  for (const tradeoff of [null, 42, {}, [], "", "   "]) {
+    const log = structuredClone(valid);
+    log.options[0].tradeoffs = ["fast", tradeoff];
+    const result = validateDecisionLog(log);
+    assert.equal(result.ok, false, `tradeoff should reject ${JSON.stringify(tradeoff)}`);
+    assert.ok(result.errors.includes("Option 1 tradeoff 2 must be a nonempty string."));
+  }
+});
+
+test("option names are unique after trimming, NFC normalization, and case folding", () => {
+  const log = structuredClone(valid);
+  log.options[0].name = "  RELEASE CANDIDATE BRANCH ";
+  const result = validateDecisionLog(log);
+  assert.equal(result.ok, false);
+  assert.ok(result.errors.includes("Option 2 has the same normalized name as option 1."));
+});
+
+test("chosen resolves by normalized name when options remain distinct", () => {
+  const log = structuredClone(valid);
+  log.chosen = "  RELEASE CANDIDATE BRANCH  ";
+  const result = validateDecisionLog(log);
+  assert.equal(result.ok, true);
+  assert.deepEqual(result.errors, []);
+});
+
+test("markdown replaces invalid tradeoff values with a stable label", () => {
+  const log = structuredClone(valid);
+  log.options[0].tradeoffs = [null, 42, {}];
+  const rendered = renderMarkdown(log);
+  assert.match(rendered, /Invalid tradeoff entry/);
+  assert.doesNotMatch(rendered, /\[object Object\]/);
+});
+
 test("markdown render includes decision sections", () => {
   const rendered = renderMarkdown(valid);
   assert.match(rendered, /# Decision Log: Choose release candidate branch/);
@@ -154,6 +188,32 @@ test("CLI validate and render report malformed entries without leaking TypeError
         assert.equal(result.status, 1);
         assert.match(result.stdout, expected);
         assert.doesNotMatch(result.stderr, /TypeError/);
+      }
+    }
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
+});
+
+test("CLI rejects malformed tradeoffs and duplicate normalized option names", () => {
+  const directory = mkdtempSync(join(tmpdir(), "decision-log-options-test-"));
+  try {
+    const malformedTradeoffs = structuredClone(valid);
+    malformedTradeoffs.options[0].tradeoffs = [null, 42, {}];
+    const duplicateNames = structuredClone(valid);
+    duplicateNames.options[0].name = " RELEASE CANDIDATE BRANCH ";
+
+    for (const [name, log, expected] of [
+      ["tradeoffs", malformedTradeoffs, /Option 1 tradeoff 1 must be a nonempty string/],
+      ["duplicates", duplicateNames, /Option 2 has the same normalized name as option 1/]
+    ]) {
+      const file = join(directory, `${name}.json`);
+      writeFileSync(file, JSON.stringify(log));
+      for (const args of [["validate", file], ["render", file], ["render", file, "--format", "json"]]) {
+        const result = runCli(args);
+        assert.equal(result.status, 1);
+        assert.match(result.stdout, expected);
+        assert.doesNotMatch(result.stdout, /\[object Object\]/);
       }
     }
   } finally {

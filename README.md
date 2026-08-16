@@ -38,6 +38,8 @@ node bin/agent-decision-log.js render fixtures/decision.valid.json --format mark
 
 Each entry in `options`, `evidence`, `risks`, and `followups` must be a JSON object (not `null`, a primitive, or an array). Option objects use `name` and `tradeoffs`; evidence objects use `label` and `ref`; risk objects use `level` and `description`; and follow-up objects use `owner` and `task`. Malformed entries are reported as validation errors with their one-based collection position.
 
+Every option name must be unique after trimming surrounding whitespace, Unicode NFC normalization, and English case folding. `chosen` is matched using the same normalization and must resolve to exactly one option. Every tradeoff must be a nonempty string; invalid entries receive a one-based option and tradeoff position and render as `Invalid tradeoff entry` rather than leaking an object's default string representation.
+
 The input root must be a JSON object, and all four collection fields must be arrays when provided. Both render formats still emit the normalized record and validation findings for invalid input, then exit nonzero; malformed shapes are never reported as JavaScript runtime errors.
 
 ## Commands
