@@ -143,6 +143,28 @@ test("CLI validate rejects unknown and trailing options", () => {
   }
 });
 
+test("CLI rejects unknown commands before reading the input file", () => {
+  const result = runCli(["nonsense", "missing.json"]);
+  assert.equal(result.status, 1);
+  assert.equal(result.stderr, "Unknown command: nonsense\n");
+  assert.doesNotMatch(result.stderr, /ENOENT|missing\.json/);
+});
+
+test("CLI validates command arguments before reading the input file", () => {
+  const cases = [
+    [["validate", "missing.json", "trailing"], "Unexpected argument: trailing\n"],
+    [["render", "missing.json", "--format"], "Option --format requires a value (markdown or json).\n"],
+    [["render", "missing.json", "--format", "yaml"], "Unsupported format: yaml\n"]
+  ];
+
+  for (const [args, expectedError] of cases) {
+    const result = runCli(args);
+    assert.equal(result.status, 1);
+    assert.equal(result.stderr, expectedError);
+    assert.doesNotMatch(result.stderr, /ENOENT/);
+  }
+});
+
 test("CLI render rejects unknown and trailing options", () => {
   for (const extraArgs of [["--typo"], ["--format", "json", "trailing"]]) {
     const result = runCli(["render", "fixtures/decision.valid.json", ...extraArgs]);
