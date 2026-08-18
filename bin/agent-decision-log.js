@@ -9,15 +9,25 @@ if (!command || !filePath || ["-h", "--help"].includes(command)) {
 }
 
 try {
-  const log = readDecisionLog(filePath);
+  let format;
   if (command === "validate") {
     rejectUnexpectedArgs(args);
+  } else if (command === "render") {
+    format = parseRenderFormat(args);
+    if (!["markdown", "json"].includes(format)) {
+      throw new Error(`Unsupported format: ${format}`);
+    }
+  } else {
+    throw new Error(`Unknown command: ${command}`);
+  }
+
+  const log = readDecisionLog(filePath);
+  if (command === "validate") {
     const result = validateDecisionLog(log);
     process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
     process.exit(result.ok ? 0 : 1);
   }
   if (command === "render") {
-    const format = parseRenderFormat(args);
     const validation = validateDecisionLog(log);
     if (format === "markdown") {
       process.stdout.write(renderMarkdown(log, validation));
@@ -27,9 +37,7 @@ try {
       process.stdout.write(`${JSON.stringify({ decision: log, validation }, null, 2)}\n`);
       process.exit(validation.ok ? 0 : 1);
     }
-    throw new Error(`Unsupported format: ${format}`);
   }
-  throw new Error(`Unknown command: ${command}`);
 } catch (error) {
   process.stderr.write(`${error.message}\n`);
   process.exit(1);
