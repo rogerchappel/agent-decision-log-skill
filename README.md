@@ -49,6 +49,8 @@ The input root must be a JSON object, and all four collection fields must be arr
 - `agent-decision-log render <file> --format markdown` selects Markdown explicitly.
 - `agent-decision-log render <file> --format json` emits normalized JSON with warnings.
 
+Both commands require `<file>` and exit nonzero with a missing-file diagnostic and usage when it is omitted. Top-level `-h`/`--help` and subcommand help such as `validate --help` or `render -h` print usage and exit successfully; help flags are not interpreted as file paths.
+
 ## Verification
 
 Run the same checks used for release-readiness before publishing or opening a release PR:

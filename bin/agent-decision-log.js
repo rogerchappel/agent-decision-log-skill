@@ -3,9 +3,26 @@ import { readDecisionLog, renderMarkdown, validateDecisionLog } from "../src/ind
 
 const [command, filePath, ...args] = process.argv.slice(2);
 
-if (!command || !filePath || ["-h", "--help"].includes(command)) {
+if (["-h", "--help"].includes(command)) {
   printHelp();
-  process.exit(command ? 0 : 1);
+  process.exit(0);
+}
+
+if (!command) {
+  printHelp();
+  process.exit(1);
+}
+
+const knownCommand = ["validate", "render"].includes(command);
+if (knownCommand && ["-h", "--help"].includes(filePath)) {
+  printHelp();
+  process.exit(0);
+}
+
+if (knownCommand && !filePath) {
+  process.stderr.write(`Missing required <file> for ${command}.\n`);
+  printHelp();
+  process.exit(1);
 }
 
 try {
