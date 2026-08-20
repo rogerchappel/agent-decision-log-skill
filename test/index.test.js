@@ -17,6 +17,13 @@ function runCli(args) {
   });
 }
 
+const cliUsage = `agent-decision-log
+
+Usage:
+  agent-decision-log validate <file>
+  agent-decision-log render <file> [--format markdown|json]
+`;
+
 test("valid decision log passes validation", () => {
   const result = validateDecisionLog(valid);
   assert.equal(result.ok, true);
@@ -133,6 +140,35 @@ test("CLI validate exits successfully for valid fixture", () => {
     encoding: "utf8"
   });
   assert.match(output, /"ok": true/);
+});
+
+test("CLI top-level help succeeds on stdout", () => {
+  for (const flag of ["-h", "--help"]) {
+    const result = runCli([flag]);
+    assert.equal(result.status, 0);
+    assert.equal(result.stdout, cliUsage);
+    assert.equal(result.stderr, "");
+  }
+});
+
+test("CLI commands require a file and print a specific diagnostic with usage", () => {
+  for (const command of ["validate", "render"]) {
+    const result = runCli([command]);
+    assert.equal(result.status, 1);
+    assert.equal(result.stdout, cliUsage);
+    assert.equal(result.stderr, `Missing required <file> for ${command}.\n`);
+  }
+});
+
+test("CLI subcommand help succeeds without treating the flag as a file", () => {
+  for (const command of ["validate", "render"]) {
+    for (const flag of ["-h", "--help"]) {
+      const result = runCli([command, flag]);
+      assert.equal(result.status, 0);
+      assert.equal(result.stdout, cliUsage);
+      assert.equal(result.stderr, "");
+    }
+  }
 });
 
 test("CLI validate rejects unknown and trailing options", () => {
