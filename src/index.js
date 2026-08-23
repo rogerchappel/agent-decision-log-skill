@@ -133,15 +133,15 @@ export function validateDecisionLog(log) {
 export function renderMarkdown(log, validation = validateDecisionLog(log)) {
   const decision = isObjectEntry(log) ? log : {};
   const lines = [
-    `# Decision Log: ${decision.title || "Untitled"}`,
+    `# Decision Log: ${requiredStringOr(decision.title, "Untitled")}`,
     "",
-    `- ID: ${decision.id || "missing"}`,
-    `- Chosen: ${decision.chosen || "missing"}`,
+    `- ID: ${requiredStringOr(decision.id, "missing")}`,
+    `- Chosen: ${requiredStringOr(decision.chosen, "missing")}`,
     `- Validation: ${validation.ok ? "pass" : "fail"}`,
     "",
     "## Context",
     "",
-    decision.context || "Missing context.",
+    requiredStringOr(decision.context, "Missing context."),
     "",
     "## Options",
     ""
@@ -158,7 +158,15 @@ export function renderMarkdown(log, validation = validateDecisionLog(log)) {
     }
   }
 
-  lines.push("", "## Rationale", "", decision.rationale || "Missing rationale.", "", "## Evidence", "");
+  lines.push(
+    "",
+    "## Rationale",
+    "",
+    requiredStringOr(decision.rationale, "Missing rationale."),
+    "",
+    "## Evidence",
+    ""
+  );
   for (const item of arrayOrEmpty(decision.evidence)) {
     if (!isObjectEntry(item)) {
       lines.push("- Invalid evidence entry");
@@ -236,6 +244,10 @@ function findSecretLikeValues(value, path = "$") {
 
 function isNonEmptyString(value) {
   return typeof value === "string" && value.trim().length > 0;
+}
+
+function requiredStringOr(value, placeholder) {
+  return isNonEmptyString(value) ? value : placeholder;
 }
 
 function normalizeOptionName(value) {

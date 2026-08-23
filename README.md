@@ -42,6 +42,12 @@ Every option name must be unique after trimming surrounding whitespace, Unicode 
 
 The input root must be a JSON object, and all four collection fields must be arrays when provided. Both render formats still emit the normalized record and validation findings for invalid input, then exit nonzero; malformed shapes are never reported as JavaScript runtime errors.
 
+Markdown rendering replaces any invalid required scalar (`id`, `title`,
+`context`, `chosen`, or `rationale`) with a stable human-readable placeholder.
+Validation still reports each invalid field and the command still exits nonzero;
+objects, arrays, numbers, booleans, and null are never string-coerced into the
+rendered decision record.
+
 ## Commands
 
 - `agent-decision-log validate <file>` checks required fields and reports issues.
