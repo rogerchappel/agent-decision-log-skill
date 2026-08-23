@@ -100,6 +100,28 @@ test("markdown replaces invalid tradeoff values with a stable label", () => {
   assert.doesNotMatch(rendered, /\[object Object\]/);
 });
 
+test("markdown uses stable placeholders for invalid required scalar fields", () => {
+  const placeholders = {
+    id: "- ID: missing",
+    title: "# Decision Log: Untitled",
+    context: "Missing context.",
+    chosen: "- Chosen: missing",
+    rationale: "Missing rationale."
+  };
+
+  for (const [field, placeholder] of Object.entries(placeholders)) {
+    for (const value of [{ invalid: true }, ["invalid"], 42, true, null]) {
+      const log = structuredClone(valid);
+      log[field] = value;
+      const rendered = renderMarkdown(log);
+
+      assert.match(rendered, new RegExp(placeholder.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+      assert.doesNotMatch(rendered, /\[object Object\]|invalid|\b42\b|\btrue\b/);
+      assert.match(rendered, new RegExp(`error: Missing required string field: ${field}`));
+    }
+  }
+});
+
 test("markdown render includes decision sections", () => {
   const rendered = renderMarkdown(valid);
   assert.match(rendered, /# Decision Log: Choose release candidate branch/);
@@ -301,6 +323,36 @@ test("CLI render reports invalid roots and collection shapes without leaking Typ
         assert.doesNotMatch(`${result.stdout}\n${result.stderr}`, /TypeError|not iterable|Cannot read properties/);
       }
     }
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
+});
+
+test("CLI Markdown render uses stable placeholders for invalid required scalar fields", () => {
+  const directory = mkdtempSync(join(tmpdir(), "decision-log-scalars-test-"));
+  const file = join(directory, "invalid-scalars.json");
+  try {
+    writeFileSync(file, JSON.stringify({
+      ...valid,
+      id: { invalid: true },
+      title: ["invalid"],
+      context: 42,
+      chosen: true,
+      rationale: null
+    }));
+
+    const result = runCli(["render", file, "--format", "markdown"]);
+    assert.equal(result.status, 1);
+    assert.match(result.stdout, /^# Decision Log: Untitled/m);
+    assert.match(result.stdout, /^- ID: missing$/m);
+    assert.match(result.stdout, /^- Chosen: missing$/m);
+    assert.match(result.stdout, /^Missing context\.$/m);
+    assert.match(result.stdout, /^Missing rationale\.$/m);
+    assert.doesNotMatch(result.stdout, /\[object Object\]|invalid|\b42\b|\btrue\b/);
+    for (const field of ["id", "title", "context", "chosen", "rationale"]) {
+      assert.match(result.stdout, new RegExp(`error: Missing required string field: ${field}`));
+    }
+    assert.equal(result.stderr, "");
   } finally {
     rmSync(directory, { recursive: true, force: true });
   }
