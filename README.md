@@ -48,6 +48,12 @@ Validation still reports each invalid field and the command still exits nonzero;
 objects, arrays, numbers, booleans, and null are never string-coerced into the
 rendered decision record.
 
+The same policy applies to nested scalar fields in options, evidence, risks,
+and follow-ups. Invalid values render as stable labels such as `Unnamed option`,
+`Evidence`, `missing ref`, `unknown`, `missing description`, `unowned`, and
+`missing task`; objects and arrays never appear as `[object Object]` or other
+implicit coercions. Validation findings and the nonzero CLI exit remain intact.
+
 ## Commands
 
 - `agent-decision-log validate <file>` checks required fields and reports issues.
