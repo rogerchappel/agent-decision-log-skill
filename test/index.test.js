@@ -122,6 +122,26 @@ test("markdown uses stable placeholders for invalid required scalar fields", () 
   }
 });
 
+test("markdown uses stable placeholders for invalid nested scalar fields", () => {
+  const log = structuredClone(valid);
+  log.options[0].name = { invalid: true };
+  log.evidence[0] = { label: ["invalid"], ref: { invalid: true } };
+  log.risks[0] = { level: { invalid: true }, description: ["invalid"] };
+  log.followups[0] = { owner: { invalid: true }, task: ["invalid"] };
+
+  const rendered = renderMarkdown(log);
+
+  assert.match(rendered, /^- Unnamed option$/m);
+  assert.match(rendered, /^- Evidence: missing ref$/m);
+  assert.match(rendered, /^- unknown: missing description$/m);
+  assert.match(rendered, /^- unowned: missing task$/m);
+  assert.doesNotMatch(rendered, /\[object Object\]|invalid/);
+  assert.match(rendered, /error: Option 1 is missing a name\./);
+  assert.match(rendered, /error: Evidence 1 requires label and ref\./);
+  assert.match(rendered, /error: Risk 1 requires a description\./);
+  assert.match(rendered, /warning: Follow-up 1 should include owner and task\./);
+});
+
 test("markdown render includes decision sections", () => {
   const rendered = renderMarkdown(valid);
   assert.match(rendered, /# Decision Log: Choose release candidate branch/);
@@ -352,6 +372,30 @@ test("CLI Markdown render uses stable placeholders for invalid required scalar f
     for (const field of ["id", "title", "context", "chosen", "rationale"]) {
       assert.match(result.stdout, new RegExp(`error: Missing required string field: ${field}`));
     }
+    assert.equal(result.stderr, "");
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
+});
+
+test("CLI Markdown render preserves validation failure for invalid nested scalars", () => {
+  const directory = mkdtempSync(join(tmpdir(), "decision-log-nested-scalars-test-"));
+  const file = join(directory, "invalid-nested-scalars.json");
+  try {
+    const log = structuredClone(valid);
+    log.options[0].name = { invalid: true };
+    log.evidence[0] = { label: ["invalid"], ref: { invalid: true } };
+    log.risks[0] = { level: { invalid: true }, description: ["invalid"] };
+    log.followups[0] = { owner: { invalid: true }, task: ["invalid"] };
+    writeFileSync(file, JSON.stringify(log));
+
+    const result = runCli(["render", file, "--format", "markdown"]);
+    assert.equal(result.status, 1);
+    assert.match(result.stdout, /^- Unnamed option$/m);
+    assert.match(result.stdout, /^- Evidence: missing ref$/m);
+    assert.match(result.stdout, /^- unknown: missing description$/m);
+    assert.match(result.stdout, /^- unowned: missing task$/m);
+    assert.doesNotMatch(result.stdout, /\[object Object\]|invalid/);
     assert.equal(result.stderr, "");
   } finally {
     rmSync(directory, { recursive: true, force: true });
