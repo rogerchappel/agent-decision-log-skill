@@ -152,7 +152,7 @@ export function renderMarkdown(log, validation = validateDecisionLog(log)) {
       lines.push("- Invalid option entry");
       continue;
     }
-    lines.push(`- ${option.name || "Unnamed option"}`);
+    lines.push(`- ${requiredStringOr(option.name, "Unnamed option")}`);
     for (const tradeoff of arrayOrEmpty(option.tradeoffs)) {
       lines.push(`  - ${isNonEmptyString(tradeoff) ? tradeoff : "Invalid tradeoff entry"}`);
     }
@@ -172,7 +172,7 @@ export function renderMarkdown(log, validation = validateDecisionLog(log)) {
       lines.push("- Invalid evidence entry");
       continue;
     }
-    lines.push(`- ${item.label || "Evidence"}: ${item.ref || "missing ref"}`);
+    lines.push(`- ${requiredStringOr(item.label, "Evidence")}: ${requiredStringOr(item.ref, "missing ref")}`);
   }
 
   lines.push("", "## Risks", "");
@@ -181,7 +181,9 @@ export function renderMarkdown(log, validation = validateDecisionLog(log)) {
       lines.push("- Invalid risk entry");
       continue;
     }
-    lines.push(`- ${risk.level || "unknown"}: ${risk.description || "missing description"}`);
+    lines.push(
+      `- ${requiredStringOr(risk.level, "unknown")}: ${requiredStringOr(risk.description, "missing description")}`
+    );
   }
   if (!Array.isArray(decision.risks) || decision.risks.length === 0) {
     lines.push("- none recorded");
@@ -193,7 +195,9 @@ export function renderMarkdown(log, validation = validateDecisionLog(log)) {
       lines.push("- Invalid follow-up entry");
       continue;
     }
-    lines.push(`- ${followup.owner || "unowned"}: ${followup.task || "missing task"}`);
+    lines.push(
+      `- ${requiredStringOr(followup.owner, "unowned")}: ${requiredStringOr(followup.task, "missing task")}`
+    );
   }
   if (!Array.isArray(decision.followups) || decision.followups.length === 0) {
     lines.push("- none recorded");
