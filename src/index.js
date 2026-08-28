@@ -60,7 +60,8 @@ export function validateDecisionLog(log) {
         }
       }
       if (!Array.isArray(option.tradeoffs) || option.tradeoffs.length === 0) {
-        warnings.push(`Option ${option.name || index + 1} has no tradeoffs.`);
+        const optionLabel = isNonEmptyString(option.name) ? option.name : index + 1;
+        warnings.push(`Option ${optionLabel} has no tradeoffs.`);
       } else {
         for (const [tradeoffIndex, tradeoff] of option.tradeoffs.entries()) {
           if (!isNonEmptyString(tradeoff)) {
