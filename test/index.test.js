@@ -76,6 +76,19 @@ test("option tradeoffs must be nonempty strings with positioned errors", () => {
   }
 });
 
+test("missing tradeoffs warnings use stable option labels", () => {
+  for (const name of [{ invalid: true }, ["invalid"], null, "", "   "]) {
+    for (const tradeoffs of [undefined, null, []]) {
+      const log = structuredClone(valid);
+      log.options[0] = { name };
+      if (tradeoffs !== undefined) log.options[0].tradeoffs = tradeoffs;
+      const result = validateDecisionLog(log);
+      assert.ok(result.warnings.includes("Option 1 has no tradeoffs."));
+      assert.doesNotMatch(result.warnings.join("\n"), /\[object Object\]|invalid/);
+    }
+  }
+});
+
 test("option names are unique after trimming, NFC normalization, and case folding", () => {
   const log = structuredClone(valid);
   log.options[0].name = "  RELEASE CANDIDATE BRANCH ";
@@ -314,6 +327,27 @@ test("CLI rejects malformed tradeoffs and duplicate normalized option names", ()
         assert.equal(result.status, 1);
         assert.match(result.stdout, expected);
         assert.doesNotMatch(result.stdout, /\[object Object\]/);
+      }
+    }
+  } finally {
+    rmSync(directory, { recursive: true, force: true });
+  }
+});
+
+test("CLI validation findings use positioned labels for invalid option names", () => {
+  const directory = mkdtempSync(join(tmpdir(), "decision-log-option-label-test-"));
+  try {
+    for (const [index, name] of [{ invalid: true }, ["invalid"], null, "", "   "].entries()) {
+      const log = structuredClone(valid);
+      log.options[0] = { name, tradeoffs: index % 2 === 0 ? [] : null };
+      const file = join(directory, `option-${index}.json`);
+      writeFileSync(file, JSON.stringify(log));
+
+      for (const args of [["validate", file], ["render", file], ["render", file, "--format", "json"]]) {
+        const result = runCli(args);
+        assert.equal(result.status, 1);
+        assert.match(result.stdout, /Option 1 has no tradeoffs\./);
+        assert.doesNotMatch(result.stdout, /\[object Object\]|warning: Option invalid/);
       }
     }
   } finally {
