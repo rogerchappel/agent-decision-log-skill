@@ -53,6 +53,8 @@ and follow-ups. Invalid values render as stable labels such as `Unnamed option`,
 `Evidence`, `missing ref`, `unknown`, `missing description`, `unowned`, and
 `missing task`; objects and arrays never appear as `[object Object]` or other
 implicit coercions. Validation findings and the nonzero CLI exit remain intact.
+Warnings for an option with an invalid or blank name use its one-based position,
+such as `Option 1 has no tradeoffs.`, instead of coercing the invalid value.
 
 ## Commands
 
