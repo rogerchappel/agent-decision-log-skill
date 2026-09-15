@@ -9,6 +9,21 @@ permissions:
   contents: read
 
 jobs:
+  release-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Run release checks
+        run: npm run release:check
+
   test:
     runs-on: ubuntu-latest
     steps:
@@ -19,6 +34,52 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: npm
 
-      - name: Run release checks
-        run: npm run release:check
+      - name: Run tests
+        run: npm test
+
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Run smoke tests
+        run: npm run smoke
+
+  package-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Run package smoke tests
+        run: npm run package:smoke
+
+  engine-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Verify Node.js engine version
+        run: |
+          node -e "const pkg = require('./package.json'); console.log('Package engine:', pkg.engines.node); const version = process.version; console.log('Current Node.js version:', version); if (!pkg.engines.node.includes('>=20')) { console.error('Engine version mismatch'); process.exit(1); }"

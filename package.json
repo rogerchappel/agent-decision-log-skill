@@ -30,7 +30,7 @@
   },
   "homepage": "https://github.com/rogerchappel/agent-decision-log-skill#readme",
   "engines": {
-    "node": ">=18"
+    "node": ">=20"
   },
   "files": [
     "bin",
